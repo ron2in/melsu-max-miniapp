@@ -36,5 +36,6 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: update MelSU schedule data"
+            git pull --rebase -X ours origin main
             git push
           fi
