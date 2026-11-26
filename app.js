@@ -142,13 +142,15 @@ function getLessonBadgeClass(type) {
 
 // Загрузка данных
 async function fetchJson(url, bustCache = false) {
-  const finalUrl = bustCache ? `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}` : url;
-  const res = await fetch(finalUrl);
+  const isLocalData = url.startsWith('./data/');
+  const cacheToken = bustCache ? Date.now() : isLocalData ? state.meta?.updatedAt || Date.now() : null;
+  const finalUrl = cacheToken ? `${url}${url.includes('?') ? '&' : '?'}v=${encodeURIComponent(cacheToken)}` : url;
+  const res = await fetch(finalUrl, isLocalData ? { cache: 'no-cache' } : undefined);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-async function loadMeta(bustCache = false) {
+async function loadMeta(bustCache = true) {
   state.meta = await fetchJson('./data/meta.json', bustCache);
   if (state.meta?.updatedAt) {
     const dt = new Date(state.meta.updatedAt);
