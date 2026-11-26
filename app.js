@@ -67,9 +67,11 @@ const el = {
   groupListContainer: document.getElementById('groupListContainer'),
 };
 
-// Инициализация MAX Mini App SDK
-function initMaxSdk() {
-  const wa = window.WebApp;
+// Инициализация SDK (MAX Mini App и Telegram Mini App)
+function initPlatformSdk() {
+  const tgWa = window.Telegram?.WebApp;
+  const maxWa = window.WebApp;
+  const wa = tgWa?.initData ? tgWa : maxWa || tgWa;
   if (!wa) return;
 
   try {
@@ -87,7 +89,7 @@ function initMaxSdk() {
       if (tp.button_text_color) root.setProperty('--accent-text', tp.button_text_color);
     }
   } catch (err) {
-    console.warn('MAX WebApp init warning:', err);
+    console.warn('WebApp SDK init warning:', err);
   }
 }
 
@@ -543,7 +545,7 @@ function bindEvents() {
 
 // Старт приложения
 async function bootstrap() {
-  initMaxSdk();
+  initPlatformSdk();
   bindEvents();
 
   if (state.group) {
