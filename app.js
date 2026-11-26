@@ -543,9 +543,36 @@ function bindEvents() {
   });
 }
 
+// Определение платформы (без сбора ID/персональных данных)
+function detectPlatform() {
+  if (window.Telegram?.WebApp?.initData) return 'tg';
+  if (window.WebApp?.initData || window.WebApp?.platform) return 'max';
+  return 'web';
+}
+
+// Анонимный счётчик посещений в GoatCounter (без cookie и IP)
+function trackAnonymousVisit() {
+  const platform = detectPlatform();
+  let attempts = 0;
+  const trySend = () => {
+    if (window.goatcounter && typeof window.goatcounter.count === 'function') {
+      window.goatcounter.count({
+        path: `/melsu-max-miniapp/${platform}`,
+        title: `Расписание МелГУ (${platform.toUpperCase()})`,
+      });
+      return;
+    }
+    if (attempts++ < 20) {
+      setTimeout(trySend, 250);
+    }
+  };
+  trySend();
+}
+
 // Старт приложения
 async function bootstrap() {
   initPlatformSdk();
+  trackAnonymousVisit();
   bindEvents();
 
   if (state.group) {
