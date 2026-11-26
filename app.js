@@ -68,28 +68,49 @@ const el = {
 };
 
 // Инициализация SDK (MAX Mini App и Telegram Mini App)
+function applyThemeParams(tp) {
+  if (!tp || typeof tp !== 'object') return;
+  const root = document.documentElement.style;
+  if (tp.bg_color) root.setProperty('--bg', tp.bg_color);
+  if (tp.secondary_bg_color) root.setProperty('--surface', tp.secondary_bg_color);
+  if (tp.text_color) root.setProperty('--text', tp.text_color);
+  if (tp.hint_color) root.setProperty('--text-muted', tp.hint_color);
+  if (tp.button_color) root.setProperty('--accent', tp.button_color);
+  if (tp.button_text_color) root.setProperty('--accent-text', tp.button_text_color);
+}
+
 function initPlatformSdk() {
-  const tgWa = window.Telegram?.WebApp;
+  // 1. MAX Mini App SDK
   const maxWa = window.WebApp;
-  const wa = tgWa?.initData ? tgWa : maxWa || tgWa;
-  if (!wa) return;
-
-  try {
-    wa.ready?.();
-    wa.expand?.();
-
-    const tp = wa.themeParams;
-    if (tp && typeof tp === 'object') {
-      const root = document.documentElement.style;
-      if (tp.bg_color) root.setProperty('--bg', tp.bg_color);
-      if (tp.secondary_bg_color) root.setProperty('--surface', tp.secondary_bg_color);
-      if (tp.text_color) root.setProperty('--text', tp.text_color);
-      if (tp.hint_color) root.setProperty('--text-muted', tp.hint_color);
-      if (tp.button_color) root.setProperty('--accent', tp.button_color);
-      if (tp.button_text_color) root.setProperty('--accent-text', tp.button_text_color);
+  if (maxWa) {
+    try {
+      maxWa.ready?.();
+      maxWa.expand?.();
+      applyThemeParams(maxWa.themeParams);
+    } catch (err) {
+      console.warn('MAX WebApp init warning:', err);
     }
-  } catch (err) {
-    console.warn('WebApp SDK init warning:', err);
+  }
+
+  // 2. Telegram Mini App SDK — подгружаем только внутри Telegram, чтобы не тормозить MAX
+  const isTelegram =
+    window.location.hash.includes('tgWebApp') ||
+    typeof window.TelegramWebviewProxy !== 'undefined';
+
+  if (isTelegram) {
+    const s = document.createElement('script');
+    s.src = 'https://telegram.org/js/telegram-web-app.js';
+    s.onload = () => {
+      try {
+        const tgWa = window.Telegram?.WebApp;
+        tgWa?.ready?.();
+        tgWa?.expand?.();
+        applyThemeParams(tgWa?.themeParams);
+      } catch (err) {
+        console.warn('Telegram WebApp init warning:', err);
+      }
+    };
+    document.head.appendChild(s);
   }
 }
 
