@@ -352,6 +352,12 @@ async function renderActiveView(forceReload = false) {
     const data = await getGroupSchedule(state.group, forceReload);
     const lessons = data?.lessons || [];
 
+    if (data?.isBackup) {
+      const when = data.cachedAt ? `от ${data.cachedAt}` : 'из резервного архива';
+      el.statusBanner.textContent = `⚠️ Сайт МелГУ временно недоступен. Показана резервная копия ${when} — возможны изменения.`;
+      el.statusBanner.classList.remove('hidden');
+    }
+
     let targetDates = [];
     if (state.activeTab === 'today') {
       targetDates = [formatDateStr(getMoscowDate(0))];

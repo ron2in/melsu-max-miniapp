@@ -22,6 +22,9 @@ jobs:
           node-version: '20'
 
       - name: Sync MelSU schedule & weather
+        env:
+          UPSTASH_URL: ${{ secrets.UPSTASH_URL }}
+          UPSTASH_TOKEN: ${{ secrets.UPSTASH_TOKEN }}
         run: node scripts/sync.mjs
 
       - name: Commit and push updated schedule data

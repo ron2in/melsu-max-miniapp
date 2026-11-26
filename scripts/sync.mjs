@@ -18,6 +18,8 @@ const TEACHERS_DIR = path.join(DATA_DIR, 'teachers');
 const META_PATH = path.join(DATA_DIR, 'meta.json');
 
 const MELSU_API = 'https://rasp.melsu.ru/api/v1/schedule/group';
+const UPSTASH_URL = process.env.UPSTASH_URL || '';
+const UPSTASH_TOKEN = process.env.UPSTASH_TOKEN || '';
 const WEATHER_API =
   'https://api.open-meteo.com/v1/forecast?latitude=46.8489&longitude=35.3653&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=Europe%2FMoscow';
 
@@ -95,22 +97,64 @@ async function readJsonSafe(filePath) {
   }
 }
 
+async function fetchGroupFromRedis(group) {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) return null;
+  try {
+    const key = `schedule:group:${group}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+    try {
+      const res = await fetch(`${UPSTASH_URL}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
+        signal: controller.signal,
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data.result) return null;
+      const parsed = JSON.parse(data.result);
+      if (parsed && Array.isArray(parsed.lessons) && parsed.lessons.length > 0) {
+        return parsed;
+      }
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
+}
+
 async function syncGroup(group, nowIso) {
   const filePath = path.join(GROUPS_DIR, `${group}.json`);
   try {
     const res = await fetchWithTimeout(`${MELSU_API}/${encodeURIComponent(group)}`);
-    if (!res.ok) return { group, status: 'fail' };
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const lessons = await res.json();
-    if (!Array.isArray(lessons)) return { group, status: 'fail' };
+    if (!Array.isArray(lessons)) throw new Error('Invalid JSON');
 
     const payload = {
       group,
       updatedAt: nowIso,
+      isBackup: false,
+      cachedAt: null,
       lessons,
     };
     await fs.writeFile(filePath, JSON.stringify(payload));
     return { group, status: 'ok', lessons };
   } catch {
+    // Фолбэк: пробуем достать резервную копию из Upstash Redis (общую с TG-ботом)
+    const redisBackup = await fetchGroupFromRedis(group);
+    if (redisBackup) {
+      const payload = {
+        group,
+        updatedAt: nowIso,
+        isBackup: true,
+        cachedAt: redisBackup.cachedAt || null,
+        lessons: redisBackup.lessons,
+      };
+      await fs.writeFile(filePath, JSON.stringify(payload));
+      return { group, status: 'redis_backup', lessons: redisBackup.lessons };
+    }
     return { group, status: 'fail' };
   }
 }
@@ -136,7 +180,7 @@ async function main() {
 
     for (const r of results) {
       let lessons = r.lessons;
-      if (r.status === 'ok') {
+      if (r.status === 'ok' || r.status === 'redis_backup') {
         okCount++;
       } else {
         failCount++;
