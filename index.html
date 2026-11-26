@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Расписание МелГУ</title>
+  <script src="https://st.max.ru/js/max-web-app.js"></script>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <!-- Шапка -->
+    <header class="header">
+      <div class="header-top">
+        <button id="groupBtn" class="group-pill" type="button" title="Сменить группу">
+          <span class="group-pill-icon">🎓</span>
+          <span id="currentGroupLabel" class="group-pill-text">Выбрать группу</span>
+          <span class="group-pill-arrow">▾</span>
+        </button>
+
+        <button id="refreshBtn" class="icon-btn" type="button" title="Обновить данные" aria-label="Обновить">
+          🔄
+        </button>
+      </div>
+
+      <div id="weatherBar" class="weather-bar hidden">
+        <span id="weatherText">🌤 Мелитополь</span>
+      </div>
+    </header>
+
+    <!-- Вкладки режимов -->
+    <nav class="tabs-scroll" aria-label="Режимы расписания">
+      <button class="tab-btn active" data-tab="today" type="button">📅 Сегодня</button>
+      <button class="tab-btn" data-tab="tomorrow" type="button">📆 Завтра</button>
+      <button class="tab-btn" data-tab="week" type="button">🗓 Неделя</button>
+      <button class="tab-btn" data-tab="next_week" type="button">⏭ След. неделя</button>
+      <button class="tab-btn" data-tab="date" type="button">⏱ На дату</button>
+      <button class="tab-btn" data-tab="teacher" type="button">👤 Преподаватель</button>
+    </nav>
+
+    <!-- Дополнительная панель для "На дату" -->
+    <section id="datePanel" class="sub-panel hidden">
+      <div class="quick-dates" id="quickDates"></div>
+      <div class="date-input-row">
+        <label for="customDateInput" class="date-label">Или выберите дату:</label>
+        <input type="date" id="customDateInput" class="input-field" />
+      </div>
+    </section>
+
+    <!-- Дополнительная панель для "Преподаватель" -->
+    <section id="teacherPanel" class="sub-panel hidden">
+      <div class="search-box">
+        <input
+          type="text"
+          id="teacherSearchInput"
+          class="input-field"
+          placeholder="Введите фамилию преподавателя..."
+          autocomplete="off"
+        />
+        <button id="clearTeacherBtn" class="clear-btn hidden" type="button" aria-label="Очистить">✕</button>
+      </div>
+      <div id="teacherSuggestions" class="suggestions-list"></div>
+      <div id="selectedTeacherBadge" class="selected-badge hidden"></div>
+    </section>
+
+    <!-- Уведомление об актуальности / кэше -->
+    <div id="statusBanner" class="status-banner hidden"></div>
+
+    <!-- Основной контент расписания -->
+    <main id="scheduleContent" class="schedule-content">
+      <div class="loader-wrap">
+        <div class="spinner"></div>
+        <p class="muted">Загружаем расписание...</p>
+      </div>
+    </main>
+
+    <!-- Футер -->
+    <footer class="footer">
+      <span id="updatedAtLabel" class="muted-small">МелГУ · Расписание</span>
+    </footer>
+  </div>
+
+  <!-- Модальное окно / экран выбора группы -->
+  <div id="groupModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="groupModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="groupModalTitle">🎓 Выбор группы</h2>
+        <button id="closeGroupModalBtn" class="icon-btn" type="button" aria-label="Закрыть">✕</button>
+      </div>
+      <p class="modal-hint">Начните вводить номер группы (например: <code>2511-3304.1</code>)</p>
+      <div class="search-box">
+        <input
+          type="text"
+          id="groupSearchInput"
+          class="input-field"
+          placeholder="Поиск группы..."
+          autocomplete="off"
+        />
+        <button id="clearGroupSearchBtn" class="clear-btn hidden" type="button" aria-label="Очистить">✕</button>
+      </div>
+      <div id="groupListContainer" class="group-list"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
